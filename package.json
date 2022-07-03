@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Dynamic scoping for JavaScript inspired by Racket's parameter construct",
   "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quexxon/parameter-js.git"
+  },
   "scripts": {
     "test": "tap"
   },
