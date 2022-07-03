@@ -1,6 +1,6 @@
 const tap = require('tap')
 
-const { isParameter, makeParameter, parameterize } = require('../src/index.js')
+const { isParameter, makeParameter, parameterize } = require('..')
 
 const getTestValues = ({ include = [], typesToSkip = [] } = {}) => {
   typesToSkip = new Set(typesToSkip)

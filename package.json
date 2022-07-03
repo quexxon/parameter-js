@@ -2,7 +2,7 @@
   "name": "@qxn/parameter",
   "version": "0.1.0",
   "description": "Dynamic scoping for JavaScript inspired by Racket's parameter construct",
-  "main": "lib/index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "tap"
   },
