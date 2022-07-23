@@ -37,7 +37,7 @@ const makeParameter = (initialValue, guard = (x) => x) => {
   return parameter
 }
 
-const parameterize = (parameters, thunk) => {
+const parameterize = async (parameters, thunk) => {
   if (!(Array.isArray(parameters) && parameters.every(isPair))) {
     throw new TypeError('Expected first argument to be an array of pairs')
   }
@@ -58,7 +58,7 @@ const parameterize = (parameters, thunk) => {
     for (const [parameter, value] of parameters) {
       parameter(value)
     }
-    result = thunk()
+    result = await thunk()
   } finally {
     for (const [parameter, value] of originalValues.entries()) {
       parameter(value)

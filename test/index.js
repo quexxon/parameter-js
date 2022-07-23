@@ -119,7 +119,7 @@ tap.test('makeParameter throws when given an invalid guard', t => {
   t.end()
 })
 
-tap.test('parameterize replaces parameter values within a given thunk', t => {
+tap.test('parameterize replaces parameter values within a given thunk', async t => {
   const letter = makeParameter('a')
   const number = makeParameter(0)
   const boolean = makeParameter(true)
@@ -130,7 +130,7 @@ tap.test('parameterize replaces parameter values within a given thunk', t => {
   t.equal(boolean(), true)
 
   // Parameterized values
-  parameterize([
+  await parameterize([
     [letter, 'z'],
     [number, Number.MAX_VALUE]
   ], () => {
@@ -147,10 +147,10 @@ tap.test('parameterize replaces parameter values within a given thunk', t => {
   t.end()
 })
 
-tap.test('parameterize returns the value of the given thunk', t => {
+tap.test('parameterize returns the value of the given thunk', async t => {
   const prefix = makeParameter('# ')
 
-  const result = parameterize([
+  const result = await parameterize([
     [prefix, '// ']
   ], () => prefix() + 'comment')
 
@@ -159,7 +159,7 @@ tap.test('parameterize returns the value of the given thunk', t => {
   t.end()
 })
 
-tap.test('parameterize returns a Promise when thunk is async', async t => {
+tap.test('parameterize returns a Promise', async t => {
   const prefix = makeParameter('# ')
 
   const result = parameterize([
@@ -172,26 +172,28 @@ tap.test('parameterize returns a Promise when thunk is async', async t => {
   t.end()
 })
 
-tap.test('parameterize throws when given an invalid parameter list', t => {
+tap.test('parameterize throws when given an invalid parameter list', async t => {
   const param = makeParameter(null)
 
-  t.throws(() => parameterize({}, () => {}))
-  t.throws(() => parameterize([[]], () => {}))
-  t.throws(() => parameterize([[param]], () => {}))
-  t.throws(() => parameterize([[null, {}]], () => {}))
+  await Promise.allSettled([
+    t.rejects(parameterize({}, () => {})),
+    t.rejects(parameterize([[]], () => {})),
+    t.rejects(parameterize([[param]], () => {})),
+    t.rejects(parameterize([[null, {}]], () => {}))
+  ])
 
   t.end()
 })
 
-tap.test('parameterize throws when second argument is not a thunk', t => {
+tap.test('parameterize throws when second argument is not a thunk', async t => {
   const testValues = getTestValues({
     include: [(x) => x],
     typesToSkip: ['function']
   })
 
-  for (const value of testValues) {
-    t.throws(() => parameterize([], value))
-  }
+  await Promise.allSettled(
+    testValues.map(value => t.rejects(parameterize([], value)))
+  )
 
   t.end()
 })
