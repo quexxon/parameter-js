@@ -1,7 +1,16 @@
-const parameterSet = new WeakSet()
+const IS_PARAMETER_METHOD = Symbol('IS_PARAMETER_METHOD')
+const PARAMETER_SECRET = Symbol('PARAMETER_SECRET')
+const METHOD_SECRET = Symbol('METHOD_SECRET')
 
 const isParameter = (value) => {
-  return parameterSet.has(value)
+  if (
+    typeof value !== 'function' ||
+    !Object.hasOwn(value, IS_PARAMETER_METHOD)
+  ) {
+    return false
+  }
+
+  return value[IS_PARAMETER_METHOD](PARAMETER_SECRET) === METHOD_SECRET
 }
 
 const isPair = (value) => {
@@ -32,7 +41,11 @@ const makeParameter = (initialValue, guard = (x) => x) => {
     return value
   }
 
-  parameterSet.add(parameter)
+  parameter[IS_PARAMETER_METHOD] = (secret) => {
+    if (secret === PARAMETER_SECRET) {
+      return METHOD_SECRET
+    }
+  }
 
   return parameter
 }

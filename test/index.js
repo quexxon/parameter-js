@@ -40,6 +40,15 @@ tap.test('isParameter returns false when applied to a non-parameter', t => {
     t.notOk(isParameter(value))
   }
 
+  const realParam = makeParameter()
+  const IS_PARAMETER_METHOD = Object.getOwnPropertySymbols(realParam)[0]
+
+  const fakeParam = () => {}
+  fakeParam[IS_PARAMETER_METHOD] = () => true
+
+  t.notOk(realParam[IS_PARAMETER_METHOD]())
+  t.notOk(isParameter(fakeParam))
+
   t.end()
 })
 
