@@ -1,6 +1,6 @@
 {
   "name": "@qxn/parameter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Dynamic scoping for JavaScript inspired by Racket's parameter construct",
   "main": "src/index.js",
   "repository": {
