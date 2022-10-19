@@ -43,38 +43,38 @@ function sets the parameter's value to the value of the given argument and
 returns the updated value.
 
 ```javascript
-const color = makeParameter('red')
-console.log(color()) // red
-color('blue')
-console.log(color()) // blue
+const color = makeParameter("red");
+console.log(color()); // red
+color("blue");
+console.log(color()); // blue
 ```
 
 In lexical scoping, a variable's value can be determined statically by its
 surrounding context. This is not the case with dynamic scope. For example:
 
 ```javascript
-const lexicalColor = 'red'
-const dynamicColor = makeParameter('blue')
+const lexicalColor = "red";
+const dynamicColor = makeParameter("blue");
 
-function logColor () {
-    // This will always log "red". The value is determined by the lexical
-    // context in which the function is defined.
-    console.log(lexicalColor)   
+function logColor() {
+  // This will always log "red". The value is determined by the lexical
+  // context in which the function is defined.
+  console.log(lexicalColor);
 
-    // We can't know what this will log at this point. The value is determined
-    // by the dynamic context in which the function is called.
-    console.log(dynamicColor())
+  // We can't know what this will log at this point. The value is determined
+  // by the dynamic context in which the function is called.
+  console.log(dynamicColor());
 }
 
 // In this context, both statements will log "red".
-logColor() 
+logColor();
 
-dynamicColor('blue')
+dynamicColor("blue");
 // In this context, the first log statement will log "red", but the second
 // will log "blue". A similar effect could be achieved if `dynamicColor` were
 // a global variable, but note that the parameter variable is block-scoped—
 // to the module in this case.
-logColor() 
+logColor();
 ```
 
 With parameters, we get the dynamic power of global scope without the danger of
@@ -87,25 +87,25 @@ module's public interface.
 ```javascript
 // error.js
 
-import { makeParameter } from '@qxn/parameter'
+import { makeParameter } from "@qxn/parameter";
 
-export const logPrefix = makeParameter('ERROR: ')
+export const logPrefix = makeParameter("ERROR: ");
 
 export function logError(error) {
-    console.error(`${logPrefix()}${error.message}`)
+  console.error(`${logPrefix()}${error.message}`);
 }
 
 // main.js
 
-import { logPrefix, logError } from './error.js'
+import { logPrefix, logError } from "./error.js";
 
-const error = new Error('Something blew up!')
+const error = new Error("Something blew up!");
 
-logError(error) // Error: Something blew up!
+logError(error); // Error: Something blew up!
 
-logPrefix('💣 => ')
+logPrefix("💣 => ");
 
-logError(error) // 💣 => Something blew up!
+logError(error); // 💣 => Something blew up!
 ```
 
 The examples we've seen so far are still prey to one of the same dangers as
@@ -115,31 +115,31 @@ programmer, especially in the face of errors. It's easy to get wrong or to omit
 unintentionally. Using the code above as an example:
 
 ```javascript
-import { logPrefix, logError } from './error.js'
+import { logPrefix, logError } from "./error.js";
 
-const error = new Error('Something blew up!')
+const error = new Error("Something blew up!");
 
-logError(error) // Error: Something blew up!
+logError(error); // Error: Something blew up!
 
 // We'd like to temporarily change the log prefix and reset after,
 // so we need to do more work.
-const initialLogPrefix = logPrefix()
-logPrefix('💣 => ')
-logError(error) // 💣 => Something blew up!
-logPrefix(initialLogPrefix)
+const initialLogPrefix = logPrefix();
+logPrefix("💣 => ");
+logError(error); // 💣 => Something blew up!
+logPrefix(initialLogPrefix);
 
 // This works in this case, but it's a lot of ceremony.
 // It won't work at all if an error occurs before the reset.
-logPrefix('💣 => ')
+logPrefix("💣 => ");
 try {
-    throw new Error('Something exploded!')
+  throw new Error("Something exploded!");
 } catch (error) {
-    logError(error) // 💣 => Something exploded!
-    throw error
+  logError(error); // 💣 => Something exploded!
+  throw error;
 }
 // Because we re-threw the error above, this reset is never reached.
 // We neglected to add an additional surrounding `try...catch` statement.
-logPrefix(initialLogPrefix)
+logPrefix(initialLogPrefix);
 ```
 
 To solve the problems of boilerplate, multiple bindings, and error recovery, we
@@ -152,32 +152,35 @@ accepts no arguments. In this context, it's a means of achieving lazy
 evaluation.
 
 ```javascript
-import { makeParameter, parameterize } from 'parameter'
+import { makeParameter, parameterize } from "parameter";
 
-const configDirectory = makeParameter('/home/will/.config')
-const configFile = makeParameter('config.yaml')
+const configDirectory = makeParameter("/home/will/.config");
+const configFile = makeParameter("config.yaml");
 
 function logConfigPath() {
-    console.log([configDirectory(), configFile()].join('/'))
+  console.log([configDirectory(), configFile()].join("/"));
 }
 
-logConfigPath() // Logs: /home/will/.config/config.yaml
+logConfigPath(); // Logs: /home/will/.config/config.yaml
 
 try {
-    parameterize([
-        [configDirectory, 'test/config'],
-        [configFile, 'development.yaml'],
-    ], () => {
-        logConfigPath() // Logs: test/config/development.yaml
-        throw new Error('Whoops!')
-    })
+  parameterize(
+    [
+      [configDirectory, "test/config"],
+      [configFile, "development.yaml"],
+    ],
+    () => {
+      logConfigPath(); // Logs: test/config/development.yaml
+      throw new Error("Whoops!");
+    }
+  );
 } catch {
-    // ignore error
+  // ignore error
 }
 
 // Parameters are reset even though an error occurred during the
 // parameterized function.
-logConfigPath() // Logs: /home/will/.config/config.yaml
+logConfigPath(); // Logs: /home/will/.config/config.yaml
 ```
 
 ### Guards
@@ -191,47 +194,47 @@ an error if the value is invalid, and may optionally transform the value before
 returning it.
 
 ```javascript
-import { makeParameter } from '@qxn/parameter'
+import { makeParameter } from "@qxn/parameter";
 
-const rgbChannel = makeParameter('red', (value) => {
-  const validTypes = ['string', 'number', 'bigint']
+const rgbChannel = makeParameter("red", (value) => {
+  const validTypes = ["string", "number", "bigint"];
   if (!validTypes.includes(typeof value)) {
-    throw new TypeError('Expected one of: ' + validTypes.join(', '))
+    throw new TypeError("Expected one of: " + validTypes.join(", "));
   }
 
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     // Ignore case of argument, but standardize on lowercase
-    value = value.trim().toLowerCase()
+    value = value.trim().toLowerCase();
 
-    if (!['red', 'green', 'blue'].includes(value)) {
-      throw new Error('Expected one of: red, green, blue')
+    if (!["red", "green", "blue"].includes(value)) {
+      throw new Error("Expected one of: red, green, blue");
     }
-
   } else {
     const hexToChannel = {
-      0xFF0000: 'red',
-      0xFF00: 'green',
-      0xFF: 'blue'
-    }
+      0xff0000: "red",
+      0xff00: "green",
+      0xff: "blue",
+    };
 
-    value = hexToChannel[Number(value)]
+    value = hexToChannel[Number(value)];
     if (value === undefined) {
       throw new Error(
-        'Expected one of: ' + Object.keys(hexToChannel)
-          .map(n => '0x' + parseInt(n).toString(16).toUpperCase())
-          .join(', ')
-      )
+        "Expected one of: " +
+          Object.keys(hexToChannel)
+            .map((n) => "0x" + parseInt(n).toString(16).toUpperCase())
+            .join(", ")
+      );
     }
   }
 
-  return value
-})
+  return value;
+});
 
-rgbChannel('yellow')    // Not red, green, or blue. throws
-rgbChannel('blue')      // That's more like it!
-rgbChannel('\ngrEEn ')  // This is okay.
-rgbChannel(0xff0000)    // This is also okay.
-rgbChannel(100)         // This is not okay. throws
+rgbChannel("yellow"); // Not red, green, or blue. throws
+rgbChannel("blue"); // That's more like it!
+rgbChannel("\ngrEEn "); // This is okay.
+rgbChannel(0xff0000); // This is also okay.
+rgbChannel(100); // This is not okay. throws
 ```
 
 ## A Few Use Cases
@@ -264,43 +267,41 @@ file, TCP socket, or crypto stream).
 ```javascript
 // io.js ---------------------------------------------------------------
 
-import { makeParameter } from '@qxn/parameter'
+import { makeParameter } from "@qxn/parameter";
 
-export const stdin = makeParameter(process.stdin)
-export const stdout = makeParameter(process.stdout)
-export const stderr = makeParameter(process.stderr)
+export const stdin = makeParameter(process.stdin);
+export const stdout = makeParameter(process.stdout);
+export const stderr = makeParameter(process.stderr);
 
 export const log = (string) => {
-    stdout().write(string + '\n')
-}
+  stdout().write(string + "\n");
+};
 
 // main.js -------------------------------------------------------------
 
 const main = () => {
-    // Do something useful, and log it.
-}
+  // Do something useful, and log it.
+};
 
 // When our application runs in RECORD mode, stream all logs to a
 // timestamped, compressed tmp file rather than standard output.
-if (process.env.RUNTIME_MODE === 'RECORD') {
-    import { compose } from 'stream'
-    import { createGzip } from 'zlib'
-    import { createWriteStream } from 'fs'
-    import { stdout } from './io.js'
+if (process.env.RUNTIME_MODE === "RECORD") {
+  import { compose } from "stream";
+  import { createGzip } from "zlib";
+  import { createWriteStream } from "fs";
+  import { stdout } from "./io.js";
 
-    const compressedLogStream = compose(
-        createGzip(),
-        createWriteStream(`/tmp/${new Date().toISOString()}.logs.gz`)
-    ) 
+  const compressedLogStream = compose(
+    createGzip(),
+    createWriteStream(`/tmp/${new Date().toISOString()}.logs.gz`)
+  );
 
-    parameterize([
-        [stdout, compressedLogStream],
-    ], () => {
-        main()
-        compressedLogStream.end()
-    })
+  parameterize([[stdout, compressedLogStream]], () => {
+    main();
+    compressedLogStream.end();
+  });
 } else {
-    main()
+  main();
 }
 ```
 
@@ -335,38 +336,36 @@ Clojure's core developers.
 ```javascript
 // provider.js ---------------------------------------------------------
 
-import { makeParameter } from '@qxn/parameter'
+import { makeParameter } from "@qxn/parameter";
 
 export const databaseConnection = makeParameter(undefined, (value) => {
-    // Verify that value satisfies database connection contract.
-})
+  // Verify that value satisfies database connection contract.
+});
 
 // consumer.js ---------------------------------------------------------
 
-import { databaseConnection } from './provider.js'
+import { databaseConnection } from "./provider.js";
 
-const db = databaseConnection()
+const db = databaseConnection();
 
 export const getAllUsers = () => {
-    return db.query('SELECT * FROM user')
-}
+  return db.query("SELECT * FROM user");
+};
 
 // main.js -------------------------------------------------------------
 
-import { parameterize } from '@qxn/parameter'
-import { databaseConnection } from './provider.js'
-import { getAllUsers } from './consumer.js'
-import * as sqlite from 'sqlite'
+import { parameterize } from "@qxn/parameter";
+import { databaseConnection } from "./provider.js";
+import { getAllUsers } from "./consumer.js";
+import * as sqlite from "sqlite";
 
 const main = async () => {
-    console.log('USERS:', await getAllUsers())
-}
+  console.log("USERS:", await getAllUsers());
+};
 
-parameterize([
-    [databaseConnection, sqlite('./test.db')]
-], () => {
-    main()
-})
+parameterize([[databaseConnection, sqlite("./test.db")]], () => {
+  main();
+});
 ```
 
 ### Application Configuration
@@ -382,58 +381,55 @@ benefit).
 ```javascript
 // configuration.js ----------------------------------------------------
 
-import { makeParameter } from '@qxn/parameter'
+import { makeParameter } from "@qxn/parameter";
 
 export const configuration = {
-    database: {
-        hostname: makeParameter(process.env.DB_HOST, (value) => {
-            // validate hostname
-            return value
-        }),
-        port: makeParameter(process.env.DB_PORT, (value) => {
-            // validate port
-            return value
-        }),
-        username: makeParameter(process.env.DB_USER, (value) => {
-            // validate username
-            return value
-        }),
-        password: makeParameter(process.env.DB_PASS, (value) => {
-            // validate password
-            return value
-        }),
-    },
-}
+  database: {
+    hostname: makeParameter(process.env.DB_HOST, (value) => {
+      // validate hostname
+      return value;
+    }),
+    port: makeParameter(process.env.DB_PORT, (value) => {
+      // validate port
+      return value;
+    }),
+    username: makeParameter(process.env.DB_USER, (value) => {
+      // validate username
+      return value;
+    }),
+    password: makeParameter(process.env.DB_PASS, (value) => {
+      // validate password
+      return value;
+    }),
+  },
+};
 
 // main.js -------------------------------------------------------------
 
-import { parameterize } from '@qxn/parameter'
-import { configuration } from './configuration.js'
+import { parameterize } from "@qxn/parameter";
+import { configuration } from "./configuration.js";
 
 const main = () => {
-    const db = new Database({
-        hostname: configuration.database.hostname(),
-        port: configuration.database.port(),
-        username: configuration.database.username(),
-        password: configuration.database.password(),
-    })
+  const db = new Database({
+    hostname: configuration.database.hostname(),
+    port: configuration.database.port(),
+    username: configuration.database.username(),
+    password: configuration.database.password(),
+  });
 
-    // Do something useful with database
-}
+  // Do something useful with database
+};
 
 // Assuming our application is automatically restarted on file change by a
 // process manager, this parameterization allows hotswappable configuration
 // during development.
-if (process.env.ENVIRONMENT === 'development') {
-    parameterize([
-        [configuration.database.hostname, 'localhost'],
-    ], () => {
-        main()
-    })
+if (process.env.ENVIRONMENT === "development") {
+  parameterize([[configuration.database.hostname, "localhost"]], () => {
+    main();
+  });
 } else {
-    main()
+  main();
 }
-
 ```
 
 #### Examples From the Wild
@@ -447,8 +443,8 @@ From Chez Scheme:
 
 From Janet:
 
-- [*err-color*](https://janet-lang.org/api/index.html#*err-color*)
-- [*pretty-format*](https://janet-lang.org/api/index.html#*pretty-format*)
+- [_err-color_](https://janet-lang.org/api/index.html#*err-color*)
+- [_pretty-format_](https://janet-lang.org/api/index.html#*pretty-format*)
 
 ### Runtime Hooks
 
@@ -481,43 +477,43 @@ functions.
 
 ```javascript
 export const makeParameter = (initialValue) => {
-    let value = initialValue
+  let value = initialValue;
 
-    return (newValue) => {
-        // We'll need to fix this later, because we'd like parameters to
-        // support any value, including `undefined`.
-        if (newValue !== undefined) {
-            value = newValue
-        }
-        return value
+  return (newValue) => {
+    // We'll need to fix this later, because we'd like parameters to
+    // support any value, including `undefined`.
+    if (newValue !== undefined) {
+      value = newValue;
     }
-}
+    return value;
+  };
+};
 
 export const parameterize = (parameters, thunk) => {
-    // We'll need to validate the provided arguments later.
+  // We'll need to validate the provided arguments later.
 
-    // Store the original values.
-    const originalValues = new Map()
-    for (const [parameter] of parameters) {
-        originalValues.set(parameter, parameter())
+  // Store the original values.
+  const originalValues = new Map();
+  for (const [parameter] of parameters) {
+    originalValues.set(parameter, parameter());
+  }
+
+  let result;
+  try {
+    // Update the values of any provided parameters.
+    for (const [parameter, value] of parameters) {
+      parameter(value);
     }
-
-    let result
-    try {
-        // Update the values of any provided parameters.
-        for (const [parameter, value] of parameters) {
-            parameter(value)
-        }
-        result = thunk()
-    } finally {
-        // Restore the original values, even if an error occurs.
-        for (const [parameter, value] of originalValues.entries()) {
-            parameter(value)
-        }
+    result = thunk();
+  } finally {
+    // Restore the original values, even if an error occurs.
+    for (const [parameter, value] of originalValues.entries()) {
+      parameter(value);
     }
+  }
 
-    return result
-}
+  return result;
+};
 ```
 
 This naive implementation will work for all the examples so far, but we can do
@@ -531,15 +527,15 @@ modified version) otherwise.
 
 ```javascript
 export const makeParameter = (initialValue, guard) => {
-    let value = guard(initialValue)
+  let value = guard(initialValue);
 
-    return (newValue) => {
-        if (newValue !== undefined) {
-            value = guard(newValue)
-        }
-        return value
+  return (newValue) => {
+    if (newValue !== undefined) {
+      value = guard(newValue);
     }
-}
+    return value;
+  };
+};
 ```
 
 Guards can be simple or arbitrarily complex, allowing for robust type checking
@@ -570,26 +566,26 @@ Now let's tweak `makeParameter` to support `undefined` values in the returned fu
 
 ```javascript
 export const makeParameter = (initialValue, guard) => {
-    let value = guard(initialValue)
+  let value = guard(initialValue);
 
-    return (...args) => {
-        if (args.length > 0) {
-            const [newValue] = args
-            value = guard(newValue)
-        }
-        return value
+  return (...args) => {
+    if (args.length > 0) {
+      const [newValue] = args;
+      value = guard(newValue);
     }
-}
+    return value;
+  };
+};
 
-const someParam = makeParameter()
+const someParam = makeParameter();
 
 // Before
-someParam() // undefined supported for initial value
-someParam(5) // value is now 5
-someParam(undefined) // value is still 5
+someParam(); // undefined supported for initial value
+someParam(5); // value is now 5
+someParam(undefined); // value is still 5
 
 // After
-someParam(undefined) // value is now `undefined` as expected
+someParam(undefined); // value is now `undefined` as expected
 ```
 
 Let's add an `isParameter` predicate function to determine whether a given value
@@ -611,41 +607,41 @@ are garbage collected?
 // Create a private WeakSet to maintain references to all parameters created
 // via `makeParameter`. Garbage collected parameters will be removed from the
 // set.
-const parameterSet = new WeakSet()
+const parameterSet = new WeakSet();
 
 export const makeParameter = (initialValue, guard) => {
-    let value = guard(initialValue)
+  let value = guard(initialValue);
 
-    const parameter = (...args) => {
-        if (args.length > 0) {
-            const [newValue] = args
-            value = guard(newValue)
-        }
-        return value
+  const parameter = (...args) => {
+    if (args.length > 0) {
+      const [newValue] = args;
+      value = guard(newValue);
     }
+    return value;
+  };
 
-    // Add newly minted parameters to the parameter set.
-    parameterSet.add(parameter)
+  // Add newly minted parameters to the parameter set.
+  parameterSet.add(parameter);
 
-    return parameter
-}
+  return parameter;
+};
 
 // Only values with a reference in the parameter set are parameters.
 export const isParameter = (value) => {
-    return parameterSet.has(value)
-}
+  return parameterSet.has(value);
+};
 
 // Usage --------------------------------------------------------------------
 
-const param = makeParameter()
+const param = makeParameter();
 
-isParameter(param) // true
+isParameter(param); // true
 
-param.length // 0
-typeof param // 'function'
-const fakeParam = () => {}
+param.length; // 0
+typeof param; // 'function'
+const fakeParam = () => {};
 
-isParameter(fakeParam) // false
+isParameter(fakeParam); // false
 ```
 
 **Note:** If this is a fun problem for you, reach out for two other ways to
@@ -656,44 +652,45 @@ Now that we have `isParameter`, we can make `parameterize` more robust.
 ```javascript
 // We add a few additional predicate functions to help check for types
 const isPair = (value) => {
-    return Array.isArray(value) && value.length === 2
-}
+  return Array.isArray(value) && value.length === 2;
+};
 
 const isThunk = (value) => {
-    return typeof value === 'function' && value.length === 0
-}
+  return typeof value === "function" && value.length === 0;
+};
 
 export const parameterize = (parameters, thunk) => {
-    // We add runtime checks for the given arguments
-    if (!(Array.isArray(parameters) && parameters.every(isPair))) {
-        throw new TypeError('Expected first argument to be an array of pairs')
-    }
+  // We add runtime checks for the given arguments
+  if (!(Array.isArray(parameters) && parameters.every(isPair))) {
+    throw new TypeError("Expected first argument to be an array of pairs");
+  }
 
-    if (!isThunk(thunk)) {
-        throw new TypeError('Expected second argument to be a thunk')
-    }
+  if (!isThunk(thunk)) {
+    throw new TypeError("Expected second argument to be a thunk");
+  }
 
-    const originalValues = new Map()
-    for (const [parameter] of parameters) {
-        // We confirm that the first item of each pair is a parameter.
-        // The second item can be any type so a type check is unnecessary.
-        if (!isParameter(parameter)) {
-            throw new TypeError('Expected first item of pair to be a parameter')
-        }
-        originalValues.set(parameter, parameter())
+  const originalValues = new Map();
+  for (const [parameter] of parameters) {
+    // We confirm that the first item of each pair is a parameter.
+    // The second item can be any type so a type check is unnecessary.
+    if (!isParameter(parameter)) {
+      throw new TypeError("Expected first item of pair to be a parameter");
     }
+    originalValues.set(parameter, parameter());
+  }
 
-    let result; try {
-        for (const [parameter, value] of parameters) {
-            parameter(value)
-        }
-        result = thunk()
-    } finally {
-        for (const [parameter, value] of originalValues.entries()) {
-            parameter(value)
-        }
+  let result;
+  try {
+    for (const [parameter, value] of parameters) {
+      parameter(value);
     }
+    result = thunk();
+  } finally {
+    for (const [parameter, value] of originalValues.entries()) {
+      parameter(value);
+    }
+  }
 
-    return result
-}
+  return result;
+};
 ```

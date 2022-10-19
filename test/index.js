@@ -1,9 +1,9 @@
-const tap = require('tap')
+const tap = require("tap");
 
-const { isParameter, makeParameter, parameterize } = require('..')
+const { isParameter, makeParameter, parameterize } = require("../dist");
 
 const getTestValues = ({ include = [], typesToSkip = [] } = {}) => {
-  typesToSkip = new Set(typesToSkip)
+  typesToSkip = new Set(typesToSkip);
 
   const values = {
     bigint: 0n,
@@ -11,198 +11,212 @@ const getTestValues = ({ include = [], typesToSkip = [] } = {}) => {
     function: () => {},
     number: 0,
     object: null,
-    string: '',
-    symbol: Symbol(''),
-    undefined
-  }
+    string: "",
+    symbol: Symbol(""),
+    undefined,
+  };
 
-  const result = include
+  const result = include;
 
   for (const type in values) {
     if (!typesToSkip.has(type)) {
-      result.push(values[type])
+      result.push(values[type]);
     }
   }
 
-  return result
-}
+  return result;
+};
 
-tap.test('isParameter returns true when applied to a parameter', t => {
-  const param = makeParameter('some value')
+tap.test("isParameter returns true when applied to a parameter", (t) => {
+  const param = makeParameter("some value");
 
-  t.ok(isParameter(param))
+  t.ok(isParameter(param));
 
-  t.end()
-})
+  t.end();
+});
 
-tap.test('isParameter returns false when applied to a non-parameter', t => {
+tap.test("isParameter returns false when applied to a non-parameter", (t) => {
   for (const value of getTestValues()) {
-    t.notOk(isParameter(value))
+    t.notOk(isParameter(value));
   }
 
-  const realParam = makeParameter()
-  const IS_PARAMETER_METHOD = Object.getOwnPropertySymbols(realParam)[0]
+  const fakeParam = () => {};
+  t.notOk(isParameter(fakeParam));
 
-  const fakeParam = () => {}
-  fakeParam[IS_PARAMETER_METHOD] = () => true
+  t.end();
+});
 
-  t.notOk(realParam[IS_PARAMETER_METHOD]())
-  t.notOk(isParameter(fakeParam))
+tap.test(
+  "makeParameter creates a parameter function that returns the provided value",
+  (t) => {
+    const theAnswer = makeParameter(42);
 
-  t.end()
-})
+    t.ok(isParameter(theAnswer));
+    t.equal(theAnswer(), 42);
 
-tap.test('makeParameter creates a parameter function that returns the provided value', t => {
-  const theAnswer = makeParameter(42)
+    t.end();
+  }
+);
 
-  t.ok(isParameter(theAnswer))
-  t.equal(theAnswer(), 42)
+tap.test("Passing a new value updates the parameter", (t) => {
+  const initialValue = "apple";
+  const updatedValue = "orange";
+  const fruit = makeParameter(initialValue);
 
-  t.end()
-})
+  t.equal(fruit(), initialValue);
+  t.equal(fruit(updatedValue), updatedValue);
+  t.equal(fruit(), updatedValue);
 
-tap.test('Passing a new value updates the parameter', t => {
-  const initialValue = 'apple'
-  const updatedValue = 'orange'
-  const fruit = makeParameter(initialValue)
+  t.end();
+});
 
-  t.equal(fruit(), initialValue)
-  t.equal(fruit(updatedValue), updatedValue)
-  t.equal(fruit(), updatedValue)
+tap.test("Calling a parameter returns the value of a given guard", (t) => {
+  const input = "a";
+  const expected = "A";
+  const letter = makeParameter(input, (v) => v.toUpperCase());
 
-  t.end()
-})
+  t.equal(letter(), expected);
 
-tap.test('Calling a parameter returns the value of a given guard', t => {
-  const input = 'a'
-  const expected = 'A'
-  const letter = makeParameter(input, v => v.toUpperCase())
+  t.end();
+});
 
-  t.equal(letter(), expected)
-
-  t.end()
-})
-
-tap.test('makeParameter throws if the given guard throws', t => {
-  const isLetter = value => {
-    if (typeof value !== 'string' || !value.match(/^[a-z]$/i)) {
-      throw new TypeError('Expected a letter')
+tap.test("makeParameter throws if the given guard throws", (t) => {
+  const isLetter = (value) => {
+    if (typeof value !== "string" || !value.match(/^[a-z]$/i)) {
+      throw new TypeError("Expected a letter");
     }
-    return value.toLowerCase()
-  }
+    return value.toLowerCase();
+  };
 
-  t.throws(() => makeParameter(1, isLetter), TypeError)
-  t.throws(() => makeParameter('not a letter', isLetter), TypeError)
+  t.throws(() => makeParameter(1, isLetter), TypeError);
+  t.throws(() => makeParameter("not a letter", isLetter), TypeError);
 
-  t.end()
-})
+  t.end();
+});
 
-tap.test('A parameter function throws if the given guard throws', t => {
-  const isLetter = value => {
-    if (typeof value !== 'string' || !value.match(/^[a-z]$/i)) {
-      throw new TypeError('Expected a letter')
+tap.test("A parameter function throws if the given guard throws", (t) => {
+  const isLetter = (value) => {
+    if (typeof value !== "string" || !value.match(/^[a-z]$/i)) {
+      throw new TypeError("Expected a letter");
     }
-    return value.toLowerCase()
+    return value.toLowerCase();
+  };
+  const letter = makeParameter("a", isLetter);
+
+  t.throws(() => letter(0), TypeError);
+
+  t.end();
+});
+
+tap.test("An async guard yields an async parameter function", async (t) => {
+  const letter = makeParameter(
+    "a",
+    (v) => new Promise((resolve) => resolve(v))
+  );
+
+  t.ok(letter() instanceof Promise);
+  t.equal(await letter(), "a");
+
+  t.end();
+});
+
+tap.test("makeParameter throws when given an invalid guard", (t) => {
+  for (const value of getTestValues({ typesToSkip: ["undefined"] })) {
+    t.throws(() => makeParameter("", value));
   }
-  const letter = makeParameter('a', isLetter)
 
-  t.throws(() => letter(0), TypeError)
+  t.end();
+});
 
-  t.end()
-})
+tap.test(
+  "parameterize replaces parameter values within a given thunk",
+  async (t) => {
+    const letter = makeParameter("a");
+    const number = makeParameter(0);
+    const boolean = makeParameter(true);
 
-tap.test('An async guard yields an async parameter function', async t => {
-  const letter = makeParameter('a', v => new Promise(resolve => resolve(v)))
+    // Initial parameter values
+    t.equal(letter(), "a");
+    t.equal(number(), 0);
+    t.equal(boolean(), true);
 
-  t.ok(letter() instanceof Promise)
-  t.equal(await letter(), 'a')
+    // Parameterized values
+    await parameterize(
+      [
+        [letter, "z"],
+        [number, Number.MAX_VALUE],
+      ],
+      () => {
+        t.equal(letter(), "z");
+        t.equal(number(), Number.MAX_VALUE);
+        t.equal(boolean(), true);
+      }
+    );
 
-  t.end()
-})
+    // Initial values persists outside of parameterization
+    t.equal(letter(), "a");
+    t.equal(number(), 0);
+    t.equal(boolean(), true);
 
-tap.test('makeParameter throws when given an invalid guard', t => {
-  for (const value of getTestValues({ typesToSkip: ['undefined'] })) {
-    t.throws(() => makeParameter('', value))
+    t.end();
   }
+);
 
-  t.end()
-})
+tap.test("parameterize returns the value of the given thunk", async (t) => {
+  const prefix = makeParameter("# ");
 
-tap.test('parameterize replaces parameter values within a given thunk', async t => {
-  const letter = makeParameter('a')
-  const number = makeParameter(0)
-  const boolean = makeParameter(true)
+  const result = await parameterize(
+    [[prefix, "// "]],
+    () => prefix() + "comment"
+  );
 
-  // Initial parameter values
-  t.equal(letter(), 'a')
-  t.equal(number(), 0)
-  t.equal(boolean(), true)
+  t.equal(result, "// comment");
 
-  // Parameterized values
-  await parameterize([
-    [letter, 'z'],
-    [number, Number.MAX_VALUE]
-  ], () => {
-    t.equal(letter(), 'z')
-    t.equal(number(), Number.MAX_VALUE)
-    t.equal(boolean(), true)
-  })
+  t.end();
+});
 
-  // Initial values persists outside of parameterization
-  t.equal(letter(), 'a')
-  t.equal(number(), 0)
-  t.equal(boolean(), true)
+tap.test("parameterize returns a Promise", async (t) => {
+  const prefix = makeParameter("# ");
 
-  t.end()
-})
+  const result = parameterize(
+    [[prefix, "// "]],
+    () => new Promise((resolve) => resolve(prefix() + "comment"))
+  );
 
-tap.test('parameterize returns the value of the given thunk', async t => {
-  const prefix = makeParameter('# ')
+  t.ok(result instanceof Promise);
+  t.equal(await result, "// comment");
 
-  const result = await parameterize([
-    [prefix, '// ']
-  ], () => prefix() + 'comment')
+  t.end();
+});
 
-  t.equal(result, '// comment')
+tap.test(
+  "parameterize throws when given an invalid parameter list",
+  async (t) => {
+    const param = makeParameter(null);
 
-  t.end()
-})
+    await Promise.allSettled([
+      t.rejects(parameterize({}, () => {})),
+      t.rejects(parameterize([[]], () => {})),
+      t.rejects(parameterize([[param]], () => {})),
+      t.rejects(parameterize([[null, {}]], () => {})),
+    ]);
 
-tap.test('parameterize returns a Promise', async t => {
-  const prefix = makeParameter('# ')
+    t.end();
+  }
+);
 
-  const result = parameterize([
-    [prefix, '// ']
-  ], () => new Promise(resolve => resolve(prefix() + 'comment')))
+tap.test(
+  "parameterize throws when second argument is not a thunk",
+  async (t) => {
+    const testValues = getTestValues({
+      include: [(x) => x],
+      typesToSkip: ["function"],
+    });
 
-  t.ok(result instanceof Promise)
-  t.equal(await result, '// comment')
+    await Promise.allSettled(
+      testValues.map((value) => t.rejects(parameterize([], value)))
+    );
 
-  t.end()
-})
-
-tap.test('parameterize throws when given an invalid parameter list', async t => {
-  const param = makeParameter(null)
-
-  await Promise.allSettled([
-    t.rejects(parameterize({}, () => {})),
-    t.rejects(parameterize([[]], () => {})),
-    t.rejects(parameterize([[param]], () => {})),
-    t.rejects(parameterize([[null, {}]], () => {}))
-  ])
-
-  t.end()
-})
-
-tap.test('parameterize throws when second argument is not a thunk', async t => {
-  const testValues = getTestValues({
-    include: [(x) => x],
-    typesToSkip: ['function']
-  })
-
-  await Promise.allSettled(
-    testValues.map(value => t.rejects(parameterize([], value)))
-  )
-
-  t.end()
-})
+    t.end();
+  }
+);
