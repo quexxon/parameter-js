@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> Migrated to [quexxon/parameter-js](https://codeberg.org/quexxon/parameter-js) on Codeberg.
+
 # Using Dynamic Scope
 
 The majority of post-ALGOL 60 programming languages are lexically scoped, to the
